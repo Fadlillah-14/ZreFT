@@ -1,0 +1,1274 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MTCNA Exam Simulator</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap');
+
+  :root {
+    --bg: #0d1117;
+    --card: #161b22;
+    --card2: #1c2128;
+    --border: #30363d;
+    --accent: #2f81f7;
+    --accent2: #58a6ff;
+    --text: #e6edf3;
+    --muted: #8b949e;
+    --correct: #238636;
+    --correct-bg: #0d2819;
+    --correct-text: #7ee787;
+    --wrong: #da3633;
+    --wrong-bg: #2d0f0f;
+    --wrong-text: #ff7b72;
+    --warn: #e85d26;
+    --multi: #8b5cf6;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Inter', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+  }
+
+  /* ── HEADER ── */
+  header {
+    background: var(--card);
+    border-bottom: 1px solid var(--border);
+    padding: 0 24px;
+    height: 52px;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    position: sticky;
+    top: 0;
+    z-index: 20;
+  }
+
+  .logo {
+    font-family: 'JetBrains Mono', monospace;
+    font-weight: 700;
+    font-size: 16px;
+    color: var(--accent2);
+    letter-spacing: -0.5px;
+    white-space: nowrap;
+  }
+
+  .logo span { color: var(--muted); }
+
+  .h-sep { flex: 1; }
+
+  .h-pill {
+    font-size: 11px;
+    font-weight: 600;
+    padding: 3px 10px;
+    border-radius: 20px;
+    letter-spacing: 0.4px;
+    text-transform: uppercase;
+    border: 1px solid transparent;
+  }
+
+  .pill-blue { background: rgba(47,129,247,.15); border-color: rgba(47,129,247,.3); color: var(--accent2); }
+  .pill-purple { background: rgba(139,92,246,.15); border-color: rgba(139,92,246,.3); color: #c4b5fd; }
+
+  #hTimer {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 15px;
+    font-weight: 600;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    padding: 4px 12px;
+    border-radius: 6px;
+    min-width: 72px;
+    text-align: center;
+    display: none;
+  }
+  #hTimer.warn { color: var(--warn); border-color: var(--warn); }
+
+  #hScore { font-size: 13px; color: var(--muted); display: none; }
+
+  /* ── LAYOUT ── */
+  main { max-width: 780px; margin: 0 auto; padding: 32px 20px 80px; }
+
+  .screen { display: none; }
+  .screen.active { display: block; }
+
+  /* ── START SCREEN ── */
+  .start-hero {
+    text-align: center;
+    padding: 40px 0 32px;
+  }
+
+  .start-hero h1 {
+    font-size: 30px;
+    font-weight: 700;
+    letter-spacing: -0.5px;
+    margin-bottom: 8px;
+  }
+
+  .start-hero h1 em { color: var(--accent2); font-style: normal; }
+
+  .start-hero p {
+    color: var(--muted);
+    font-size: 14px;
+    line-height: 1.7;
+    max-width: 480px;
+    margin: 0 auto 28px;
+  }
+
+  .notice {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: rgba(139,92,246,.1);
+    border: 1px solid rgba(139,92,246,.25);
+    border-radius: 8px;
+    padding: 8px 14px;
+    font-size: 12px;
+    color: #c4b5fd;
+    margin-bottom: 32px;
+  }
+
+  .section-label {
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: var(--muted);
+    margin-bottom: 12px;
+  }
+
+  .mod-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+    gap: 10px;
+    margin-bottom: 28px;
+    text-align: left;
+  }
+
+  .mod-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 12px 14px;
+    cursor: pointer;
+    transition: all .15s;
+    position: relative;
+    user-select: none;
+  }
+
+  .mod-card:hover { border-color: var(--accent); }
+  .mod-card.sel { border-color: var(--accent2); background: rgba(88,166,255,.06); }
+
+  .mod-card.sel::after {
+    content: '✓';
+    position: absolute;
+    top: 9px; right: 11px;
+    color: var(--accent2);
+    font-size: 12px;
+    font-weight: 700;
+  }
+
+  .mod-n { font-family: 'JetBrains Mono', monospace; font-size: 10px; color: var(--accent2); font-weight: 600; margin-bottom: 3px; }
+  .mod-t { font-size: 12px; font-weight: 600; margin-bottom: 2px; }
+  .mod-c { font-size: 11px; color: var(--muted); }
+
+  .options-row {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin-bottom: 8px;
+  }
+
+  .opt-btn {
+    background: var(--card);
+    border: 1px solid var(--border);
+    color: var(--text);
+    padding: 8px 16px;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 500;
+    font-family: inherit;
+    cursor: pointer;
+    transition: all .15s;
+  }
+
+  .opt-btn:hover { border-color: var(--accent); }
+  .opt-btn.active { background: var(--accent); border-color: var(--accent); color: #fff; }
+
+  .start-note { font-size: 12px; color: var(--muted); margin-bottom: 24px; }
+
+  .btn-start {
+    background: var(--accent);
+    color: #fff;
+    border: none;
+    padding: 13px 36px;
+    border-radius: 10px;
+    font-size: 15px;
+    font-weight: 600;
+    font-family: inherit;
+    cursor: pointer;
+    transition: all .15s;
+    letter-spacing: .3px;
+  }
+  .btn-start:hover { background: var(--accent2); transform: translateY(-1px); }
+  .btn-start:disabled { opacity: .4; cursor: not-allowed; transform: none; }
+
+  /* ── PROGRESS / QUIZ ── */
+  .prog-wrap {
+    height: 4px;
+    background: var(--card2);
+    border-radius: 4px;
+    margin-bottom: 20px;
+    overflow: hidden;
+  }
+
+  .prog-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--accent), var(--accent2));
+    border-radius: 4px;
+    transition: width .4s ease;
+  }
+
+  .q-meta {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 14px;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+
+  .q-num { font-family: 'JetBrains Mono', monospace; font-size: 12px; color: var(--muted); }
+
+  .tag-row { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
+
+  .tag {
+    font-size: 10px;
+    font-weight: 700;
+    padding: 2px 8px;
+    border-radius: 20px;
+    text-transform: uppercase;
+    letter-spacing: .4px;
+    border: 1px solid transparent;
+  }
+
+  .tag-mod { background: rgba(47,129,247,.12); border-color: rgba(47,129,247,.25); color: var(--accent2); }
+  .tag-multi { background: rgba(139,92,246,.12); border-color: rgba(139,92,246,.25); color: #c4b5fd; }
+  .tag-tf { background: rgba(16,185,129,.12); border-color: rgba(16,185,129,.25); color: #6ee7b7; }
+
+  .q-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 24px 24px 20px;
+    margin-bottom: 16px;
+  }
+
+  .q-text {
+    font-size: 16px;
+    font-weight: 500;
+    line-height: 1.65;
+    margin-bottom: 20px;
+  }
+
+  .multi-hint {
+    font-size: 12px;
+    color: #c4b5fd;
+    margin-bottom: 14px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .multi-hint::before {
+    content: '';
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: #8b5cf6;
+    flex-shrink: 0;
+  }
+
+  .opts { display: flex; flex-direction: column; gap: 9px; }
+
+  .opt {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 13px 16px;
+    text-align: left;
+    font-size: 14px;
+    font-family: inherit;
+    color: var(--text);
+    cursor: pointer;
+    transition: all .15s;
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    line-height: 1.5;
+  }
+
+  .opt:hover:not(:disabled):not(.checked) { background: var(--card2); border-color: var(--muted); }
+  .opt:disabled { cursor: default; }
+
+  .opt-lbl {
+    min-width: 24px;
+    height: 24px;
+    border-radius: 5px;
+    background: var(--card2);
+    border: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-size: 11px;
+    font-family: 'JetBrains Mono', monospace;
+    flex-shrink: 0;
+    transition: all .15s;
+  }
+
+  /* checkbox style for multi */
+  .opt-cb {
+    min-width: 18px;
+    height: 18px;
+    border-radius: 4px;
+    border: 2px solid var(--border);
+    flex-shrink: 0;
+    margin-top: 3px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all .15s;
+    font-size: 11px;
+    font-weight: 700;
+  }
+
+  .opt.checked .opt-cb { background: var(--multi); border-color: var(--multi); color: #fff; }
+  .opt.checked { border-color: var(--multi); background: rgba(139,92,246,.06); }
+
+  .opt.correct { background: var(--correct-bg); border-color: var(--correct); color: var(--correct-text); }
+  .opt.correct .opt-lbl, .opt.correct .opt-cb { background: var(--correct); border-color: var(--correct); color: #fff; }
+
+  .opt.wrong { background: var(--wrong-bg); border-color: var(--wrong); color: var(--wrong-text); }
+  .opt.wrong .opt-lbl, .opt.wrong .opt-cb { background: var(--wrong); border-color: var(--wrong); color: #fff; }
+
+  .opt.partial { background: rgba(232,93,38,.08); border-color: var(--warn); color: #fdba74; }
+  .opt.partial .opt-lbl, .opt.partial .opt-cb { background: var(--warn); border-color: var(--warn); color: #fff; }
+
+  .exp-box {
+    margin-top: 14px;
+    padding: 12px 15px;
+    background: rgba(255,255,255,.03);
+    border-left: 3px solid var(--accent);
+    border-radius: 0 8px 8px 0;
+    font-size: 13px;
+    line-height: 1.7;
+    color: var(--muted);
+    display: none;
+  }
+  .exp-box.show { display: block; }
+  .exp-box strong { color: var(--text); }
+
+  .multi-submit {
+    margin-top: 12px;
+    background: var(--multi);
+    color: #fff;
+    border: none;
+    padding: 10px 22px;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 600;
+    font-family: inherit;
+    cursor: pointer;
+    transition: all .15s;
+    display: none;
+  }
+  .multi-submit.show { display: inline-block; }
+  .multi-submit:hover { background: #7c3aed; }
+
+  .action-row {
+    display: flex;
+    gap: 10px;
+    justify-content: flex-end;
+    align-items: center;
+  }
+
+  .btn-skip {
+    background: transparent;
+    color: var(--muted);
+    border: 1px solid var(--border);
+    padding: 10px 18px;
+    border-radius: 8px;
+    font-size: 13px;
+    font-family: inherit;
+    cursor: pointer;
+    transition: all .15s;
+  }
+  .btn-skip:hover { color: var(--text); border-color: var(--muted); }
+
+  .btn-next {
+    background: var(--accent);
+    color: #fff;
+    border: none;
+    padding: 10px 24px;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 600;
+    font-family: inherit;
+    cursor: pointer;
+    transition: all .15s;
+    display: none;
+  }
+  .btn-next.show { display: inline-block; }
+  .btn-next:hover { background: var(--accent2); }
+
+  /* ── RESULT ── */
+  .res-hero { text-align: center; padding: 20px 0 28px; }
+
+  .res-ring {
+    width: 130px;
+    height: 130px;
+    margin: 0 auto 20px;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .res-ring svg { position: absolute; top: 0; left: 0; transform: rotate(-90deg); }
+
+  .res-pct {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 32px;
+    font-weight: 700;
+    position: relative;
+    z-index: 1;
+    line-height: 1;
+    margin-bottom: 2px;
+  }
+
+  .res-lbl {
+    font-size: 11px;
+    color: var(--muted);
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: .5px;
+    position: relative;
+    z-index: 1;
+  }
+
+  .res-verdict {
+    font-size: 22px;
+    font-weight: 700;
+    margin-bottom: 6px;
+  }
+  .res-verdict.pass { color: var(--correct-text); }
+  .res-verdict.fail { color: var(--wrong-text); }
+
+  .res-sub { font-size: 14px; color: var(--muted); margin-bottom: 24px; }
+
+  .stats-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
+    margin-bottom: 28px;
+  }
+
+  .stat {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 14px 10px;
+    text-align: center;
+  }
+
+  .stat .v {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 24px;
+    font-weight: 700;
+    margin-bottom: 3px;
+  }
+  .stat .v.g { color: var(--correct-text); }
+  .stat .v.r { color: var(--wrong-text); }
+  .stat .v.b { color: var(--accent2); }
+  .stat .l { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: .5px; color: var(--muted); }
+
+  .review { text-align: left; margin-bottom: 28px; }
+
+  .review h3 {
+    font-size: 12px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: var(--muted);
+    margin-bottom: 12px;
+  }
+
+  .ri {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 13px 15px;
+    margin-bottom: 8px;
+    font-size: 13px;
+    line-height: 1.5;
+  }
+
+  .ri.ri-ok { border-left: 3px solid var(--correct); }
+  .ri.ri-no { border-left: 3px solid var(--wrong); }
+  .ri.ri-skip { border-left: 3px solid var(--border); }
+
+  .ri .rq { font-weight: 500; margin-bottom: 4px; color: var(--text); }
+  .ri .ra { font-size: 12px; color: var(--muted); }
+  .ri .ra .ok { color: var(--correct-text); }
+  .ri .ra .no { color: var(--wrong-text); }
+
+  .res-actions {
+    display: flex;
+    gap: 10px;
+    justify-content: center;
+    flex-wrap: wrap;
+  }
+
+  .res-actions button {
+    padding: 12px 22px;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 600;
+    font-family: inherit;
+    cursor: pointer;
+    transition: all .15s;
+  }
+
+  .btn-again { background: var(--accent); color: #fff; border: none; }
+  .btn-again:hover { background: var(--accent2); }
+  .btn-home2 { background: transparent; color: var(--text); border: 1px solid var(--border); }
+  .btn-home2:hover { border-color: var(--muted); }
+
+  @media (max-width: 480px) {
+    .q-text { font-size: 14px; }
+    .mod-grid { grid-template-columns: repeat(2, 1fr); }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">MTCNA<span> Exam Simulator</span></div>
+  <div class="h-sep"></div>
+  <div class="h-pill pill-blue">RouterOS</div>
+  <div class="h-pill pill-purple">Multi-Answer</div>
+  <div id="hTimer">60:00</div>
+</header>
+
+<main>
+  <!-- START -->
+  <div class="screen active" id="sStart">
+    <div class="start-hero">
+      <h1>MTCNA <em>Exam Simulator</em></h1>
+      <p>Questions styled after the real MikroTik MTCNA exam — English language, single & multiple-choice, scenario-based. Passing score: 60%.</p>
+      <div class="notice">⚠️ Includes multiple-answer questions — select ALL correct options before submitting.</div>
+    </div>
+
+    <div class="section-label">Select Modules</div>
+    <div class="mod-grid" id="modGrid"></div>
+
+    <div class="section-label">Number of Questions</div>
+    <div class="options-row" id="nRow">
+      <button class="opt-btn active" data-n="10">10</button>
+      <button class="opt-btn" data-n="20">20</button>
+      <button class="opt-btn" data-n="25">25 (Exam)</button>
+      <button class="opt-btn" data-n="all">All</button>
+    </div>
+    <div class="start-note" id="timerNote">Timer (60 min) activates in 25-question exam mode.</div>
+
+    <br>
+    <button class="btn-start" id="btnStart" onclick="startQuiz()">Start Exam →</button>
+  </div>
+
+  <!-- QUIZ -->
+  <div class="screen" id="sQuiz">
+    <div class="prog-wrap"><div class="prog-fill" id="progFill" style="width:0"></div></div>
+    <div class="q-meta">
+      <div class="q-num" id="qNum">1 / 25</div>
+      <div class="tag-row" id="tagRow"></div>
+    </div>
+    <div class="q-card">
+      <div class="q-text" id="qText"></div>
+      <div class="multi-hint" id="multiHint" style="display:none">Select all correct answers, then click Submit.</div>
+      <div class="opts" id="opts"></div>
+      <button class="multi-submit" id="multiSubmit" onclick="submitMulti()">Submit Answer</button>
+      <div class="exp-box" id="expBox"></div>
+    </div>
+    <div class="action-row">
+      <button class="btn-skip" onclick="skipQ()">Skip</button>
+      <button class="btn-next show" id="btnNext" onclick="nextQ()" style="display:none">Next →</button>
+    </div>
+  </div>
+
+  <!-- RESULT -->
+  <div class="screen" id="sResult">
+    <div class="res-hero">
+      <div class="res-ring">
+        <svg width="130" height="130" viewBox="0 0 130 130">
+          <circle cx="65" cy="65" r="54" fill="none" stroke="#21262d" stroke-width="9"/>
+          <circle id="ringArc" cx="65" cy="65" r="54" fill="none" stroke="#2f81f7" stroke-width="9"
+            stroke-dasharray="339.3" stroke-dashoffset="339.3" stroke-linecap="round"
+            style="transition:stroke-dashoffset 1s ease"/>
+        </svg>
+        <div class="res-pct" id="resPct">0%</div>
+        <div class="res-lbl">Score</div>
+      </div>
+      <div class="res-verdict" id="resVerdict"></div>
+      <div class="res-sub" id="resSub"></div>
+    </div>
+    <div class="stats-grid">
+      <div class="stat"><div class="v g" id="stOk">0</div><div class="l">Correct</div></div>
+      <div class="stat"><div class="v r" id="stNo">0</div><div class="l">Wrong</div></div>
+      <div class="stat"><div class="v b" id="stSk">0</div><div class="l">Skipped</div></div>
+    </div>
+    <div class="review">
+      <h3>Answer Review</h3>
+      <div id="reviewBox"></div>
+    </div>
+    <div class="res-actions">
+      <button class="btn-again" onclick="retryQuiz()">Retry</button>
+      <button class="btn-home2" onclick="goHome()">← Home</button>
+    </div>
+  </div>
+</main>
+
+<script>
+// Q types: 'single' | 'multi' | 'tf'
+// correct: index (single/tf) | array of indices (multi)
+const BANK = [
+
+  /* ══════════════ MODULE 1: INTRODUCTION ══════════════ */
+  {mod:"M1 – Introduction", type:"single",
+   q:"Which of the following best describes MikroTik RouterOS?",
+   opts:["A proprietary RTOS developed by Cisco","A stand-alone Linux-based operating system for routing","A firmware only compatible with x86 hardware","A cloud-only network management platform"],
+   correct:1, exp:"RouterOS is a stand-alone OS based on Linux kernel v3.3.5. It can run on RouterBOARD hardware, x86 PCs, or as a Virtual Machine."},
+
+  {mod:"M1 – Introduction", type:"single",
+   q:"A network technician needs to access a MikroTik router using a graphical interface from a Windows PC without knowing the router's IP address. Which tool should be used?",
+   opts:["SSH client","Web browser (WebFig)","Winbox via MAC address","Serial console"],
+   correct:2, exp:"Winbox can discover and connect to MikroTik routers via MAC address, which is useful when the IP address is unknown or unconfigured."},
+
+  {mod:"M1 – Introduction", type:"multi",
+   q:"Which of the following are valid methods to access and configure MikroTik RouterOS? (Select all that apply)",
+   opts:["Winbox","Telnet","WebFig","Serial Console","RDP"],
+   correct:[0,1,2,3], exp:"RouterOS can be accessed via Winbox, Telnet, SSH, WebFig (browser), and Serial Console. RDP is a Windows remote desktop protocol not supported by RouterOS."},
+
+  {mod:"M1 – Introduction", type:"single",
+   q:"What is the default RouterOS release channel recommended for production environments?",
+   opts:["Beta (Release Candidate)","Long-term (Bugfix only)","Stable (Current)","Nightly build"],
+   correct:1, exp:"Long-term is the most stable channel — it only receives bug fixes without new features, making it safest for production."},
+
+  {mod:"M1 – Introduction", type:"tf",
+   q:"True or False: A MikroTik RouterOS license is tied to the storage media (NAND) of the RouterBOARD device.",
+   opts:["True","False"],
+   correct:0, exp:"The license is stored on and tied to the NAND storage of the RouterBOARD. If you reinstall using a non-MikroTik tool, the license may be lost."},
+
+  {mod:"M1 – Introduction", type:"single",
+   q:"Which license level allows unlimited RouterOS features?",
+   opts:["Level 3","Level 4","Level 5","Level 6"],
+   correct:3, exp:"License Level 6 (Controller) provides unlimited RouterOS features. Level 3 is for CPE/station mode, Level 4 for AP use, Level 5 for ISP."},
+
+  {mod:"M1 – Introduction", type:"single",
+   q:"An administrator needs to completely reinstall RouterOS on a router that no longer boots. Which method should be used?",
+   opts:["Soft reset via Winbox","Backup restore","Netinstall via network boot","CHR deployment"],
+   correct:2, exp:"Netinstall boots the device via network (PXE-like) and allows full reinstallation of RouterOS even when the device cannot boot normally."},
+
+  {mod:"M1 – Introduction", type:"multi",
+   q:"Which of the following information is automatically obtained by a DHCP Client when it receives an IP lease? (Select all that apply)",
+   opts:["IP Address","Subnet Mask","Default Gateway","DNS Server","MAC Address of the server"],
+   correct:[0,1,2,3], exp:"DHCP provides IP address, subnet mask, default gateway, and DNS server. The server's MAC address is not delivered as part of the lease information."},
+
+  {mod:"M1 – Introduction", type:"single",
+   q:"A router's configuration is complex and the admin wants to restore it on a different RouterOS version. Which backup format should be used?",
+   opts:["Binary backup file (.backup)","Script export file (.rsc)","ZIP archive","Plain text log file"],
+   correct:1, exp:"Script files (.rsc) contain RouterOS CLI commands in plain text and can be used across different RouterOS versions. Binary backups are version-specific."},
+
+  {mod:"M1 – Introduction", type:"single",
+   q:"Which IP address range is NOT considered a private (RFC 1918) address space?",
+   opts:["10.0.0.0/8","172.16.0.0/12","192.168.0.0/16","169.254.0.0/16"],
+   correct:3, exp:"169.254.0.0/16 is the link-local (APIPA) address range, not an RFC 1918 private range. The three private ranges are 10/8, 172.16/12, and 192.168/16."},
+
+  {mod:"M1 – Introduction", type:"single",
+   q:"How many usable host addresses does a /29 subnet provide?",
+   opts:["4","6","8","14"],
+   correct:1, exp:"/29 = 8 total IPs. Subtract 2 (network ID + broadcast) = 6 usable hosts."},
+
+  {mod:"M1 – Introduction", type:"single",
+   q:"What happens when IP Services are disabled in RouterOS for a specific service such as Winbox?",
+   opts:["The router reboots","Only that service port is closed and inaccessible","All services are disabled","The license is invalidated"],
+   correct:1, exp:"Disabling a service in IP > Services closes only that specific port/service. Other services remain unaffected."},
+
+  {mod:"M1 – Introduction", type:"multi",
+   q:"Which actions can be performed during a RouterOS configuration reset? (Select all that apply)",
+   opts:["Hard reset using the physical reset button","Soft reset via System > Reset Configuration in Winbox","Netinstall reinstallation","Restoring a binary backup file"],
+   correct:[0,1,2], exp:"RouterOS can be reset via hard reset (physical button), soft reset (software), or Netinstall (full reinstall). Restoring a backup file does not reset — it restores an existing config."},
+
+  {mod:"M1 – Introduction", type:"tf",
+   q:"True or False: MikroTik RouterOS supports installation on virtual machines (VMs).",
+   opts:["True","False"],
+   correct:0, exp:"RouterOS can run as a VM (Virtual Machine) in addition to dedicated RouterBOARD hardware and x86 PCs. Cloud Hosted Router (CHR) is the VM-optimized version."},
+
+  {mod:"M1 – Introduction", type:"single",
+   q:"In RouterOS user management, what is the purpose of a GROUP?",
+   opts:["To assign IP addresses to users","To define privileges and permissions for a set of users","To create VPN tunnels between users","To schedule automatic backups"],
+   correct:1, exp:"Groups in RouterOS define the privilege level (read, write, full access, etc.) for users assigned to that group."},
+
+  /* ══════════════ MODULE 2: DHCP & ARP ══════════════ */
+  {mod:"M2 – DHCP & ARP", type:"single",
+   q:"A DHCP client sends its initial discovery message. What type of network transmission does it use?",
+   opts:["Unicast to a known server IP","Multicast to the DHCP multicast group","Broadcast to 255.255.255.255","Anycast"],
+   correct:2, exp:"DHCP Discover is sent as a broadcast (255.255.255.255) because the client does not yet know the DHCP server's address."},
+
+  {mod:"M2 – DHCP & ARP", type:"single",
+   q:"What is the correct order of the DHCP DORA process?",
+   opts:["Discover→Request→Offer→Acknowledge","Discover→Offer→Request→Acknowledge","Offer→Discover→Request→Acknowledge","Request→Discover→Acknowledge→Offer"],
+   correct:1, exp:"DORA = Discover (client broadcast) → Offer (server unicast) → Request (client broadcast) → Acknowledge (server unicast)."},
+
+  {mod:"M2 – DHCP & ARP", type:"single",
+   q:"A network has its DHCP server on a different subnet from the clients. What RouterOS feature is needed to allow clients to obtain IP addresses?",
+   opts:["DHCP Static Lease","DHCP Relay","DHCP Pool","IP Helper-Address on client"],
+   correct:1, exp:"DHCP Relay forwards DHCP broadcast messages across subnets so a single DHCP server can serve clients on multiple networks."},
+
+  {mod:"M2 – DHCP & ARP", type:"single",
+   q:"An admin wants to ensure that a specific device always receives the same IP address from DHCP. What should be configured?",
+   opts:["DHCP Pool with a narrow range","DHCP Static Lease bound to the device's MAC address","Static IP address on the device only","ARP Static entry"],
+   correct:1, exp:"DHCP Static Leases map a MAC address to a fixed IP, so the device always gets the same address via DHCP without manual static IP configuration on the device."},
+
+  {mod:"M2 – DHCP & ARP", type:"tf",
+   q:"True or False: DHCP can operate across multiple broadcast domains without a relay agent.",
+   opts:["True","False"],
+   correct:1, exp:"DHCP relies on broadcast and cannot cross routers (broadcast domain boundaries) on its own. A DHCP Relay agent is needed to forward requests across subnets."},
+
+  {mod:"M2 – DHCP & ARP", type:"single",
+   q:"What is the function of ARP (Address Resolution Protocol)?",
+   opts:["Translates domain names to IP addresses","Maps IP addresses to MAC addresses within the same subnet","Assigns IP addresses dynamically","Encrypts traffic between network segments"],
+   correct:1, exp:"ARP resolves Layer 3 IP addresses to Layer 2 MAC addresses within the same broadcast domain."},
+
+  {mod:"M2 – DHCP & ARP", type:"single",
+   q:"An admin enables Static ARP on an interface and sets the ARP mode to 'reply-only'. What is the effect?",
+   opts:["The router replies ARP for any IP requested","Only devices with IP+MAC entries in the ARP table can communicate through that interface","All ARP requests are blocked","The interface stops sending gratuitous ARP"],
+   correct:1, exp:"'Reply-only' mode means the router only responds to ARP requests for IPs listed in the static ARP table. Devices not listed cannot communicate through the router."},
+
+  {mod:"M2 – DHCP & ARP", type:"multi",
+   q:"Which parameters are typically provided to a DHCP client when it receives an acknowledged lease? (Select all that apply)",
+   opts:["IP Address","Subnet Mask","Default Gateway","DNS Server","WINS Server address (always)"],
+   correct:[0,1,2,3], exp:"Standard DHCP provides IP, subnet mask, default gateway, and DNS server. WINS is optional and only provided if configured. It is not always included."},
+
+  /* ══════════════ MODULE 3: BRIDGE ══════════════ */
+  {mod:"M3 – Bridge", type:"single",
+   q:"A MikroTik router has ether2 and wlan1 in a bridge. What is the effect on these interfaces?",
+   opts:["They operate as separate routed interfaces","They form a single Layer 2 broadcast domain","They create a VPN tunnel between them","They duplicate traffic for monitoring purposes"],
+   correct:1, exp:"Adding interfaces to a bridge combines them into a single Layer 2 domain, so devices connected to either interface can communicate directly as if on the same switch."},
+
+  {mod:"M3 – Bridge", type:"tf",
+   q:"True or False: A MikroTik bridge interface can include Ethernet, Wireless, SFP, and tunnel interfaces.",
+   opts:["True","False"],
+   correct:0, exp:"All interface types in RouterOS (Ethernet, Wireless, SFP, VLAN, tunnel interfaces) can be added as bridge ports."},
+
+  {mod:"M3 – Bridge", type:"single",
+   q:"On which OSI layer does a MikroTik bridge operate?",
+   opts:["Layer 1 – Physical","Layer 2 – Data Link","Layer 3 – Network","Layer 4 – Transport"],
+   correct:1, exp:"Bridges operate at Layer 2 (Data Link), forwarding frames based on MAC addresses."},
+
+  {mod:"M3 – Bridge", type:"single",
+   q:"By default on a MikroTik SOHO router, which Ethernet ports are already part of a bridge?",
+   opts:["ether1 only","ether1 and ether2","ether2 through ether5","All ports including ether1"],
+   correct:2, exp:"On MikroTik SOHO routers, ether2 through ether5 are pre-configured as bridge ports (LAN), while ether1 is typically left as the WAN interface."},
+
+  /* ══════════════ MODULE 4: ROUTING ══════════════ */
+  {mod:"M4 – Routing", type:"single",
+   q:"In the RouterOS routing table, what does the flag 'DAC' on a route indicate?",
+   opts:["Dynamic, Active, Connected","Disabled, Assigned, Configured","Default, Auto, Connected","Dynamic, Admin, Cached"],
+   correct:0, exp:"Route flags: D=Dynamic, A=Active, C=Connected. A DAC route is a directly connected network that was automatically added when an IP was assigned to an active interface."},
+
+  {mod:"M4 – Routing", type:"single",
+   q:"Two routes exist in the routing table: 192.168.88.0/26 via 10.0.0.1 and 192.168.88.0/28 via 10.0.0.2. A packet destined to 192.168.88.10 arrives. Which gateway is used?",
+   opts:["10.0.0.1 because /26 is less specific","10.0.0.2 because /28 is more specific","Both gateways via load balancing","The route with lower gateway IP"],
+   correct:1, exp:"RouterOS uses longest prefix match. /28 covers 16 addresses (more specific) vs /26 covering 64. Since 192.168.88.10 is in both, the more specific /28 wins."},
+
+  {mod:"M4 – Routing", type:"single",
+   q:"What does configuring 0.0.0.0/0 as a static route's destination represent?",
+   opts:["A loopback route","A discard/blackhole route","The default gateway covering all addresses","A host-specific route"],
+   correct:2, exp:"0.0.0.0/0 is the default route (default gateway). It matches all destinations and is used when no more specific route exists."},
+
+  {mod:"M4 – Routing", type:"multi",
+   q:"Which dynamic routing protocols are supported by MikroTik RouterOS? (Select all that apply)",
+   opts:["RIP","OSPF","BGP","EIGRP","IS-IS"],
+   correct:[0,1,2], exp:"RouterOS supports RIP, RIPng, OSPF, OSPFv3, and BGP. EIGRP and IS-IS are Cisco proprietary or not natively supported in RouterOS."},
+
+  {mod:"M4 – Routing", type:"single",
+   q:"When multiple routes to the same destination exist, RouterOS selects the best route primarily based on which parameter (after matching the most specific prefix)?",
+   opts:["Interface speed","Administrative Distance (Distance value)","Routing protocol name","Next-hop MAC address"],
+   correct:1, exp:"After prefix match, RouterOS uses the Distance value (administrative distance). Lower distance = higher priority. e.g., Connected (0) > Static (1) > OSPF (110) > RIP (120)."},
+
+  {mod:"M4 – Routing", type:"tf",
+   q:"True or False: A connected route is automatically added to the routing table when an IP address is assigned to an active interface.",
+   opts:["True","False"],
+   correct:0, exp:"RouterOS automatically creates a connected (C) route for each network reachable via an active interface with an assigned IP address."},
+
+  /* ══════════════ MODULE 5: WIRELESS ══════════════ */
+  {mod:"M5 – Wireless", type:"single",
+   q:"An AP is configured in 'AP Bridge' mode. What is the key characteristic of this mode?",
+   opts:["It connects to only one client (PTP)","It serves multiple wireless clients (PTMP)","It acts as a wireless client","It only works with MikroTik station devices"],
+   correct:1, exp:"AP Bridge mode is a Point-to-Multipoint (PTMP) access point that can serve many wireless clients simultaneously."},
+
+  {mod:"M5 – Wireless", type:"single",
+   q:"A MikroTik wireless interface must connect to a third-party (non-MikroTik) AP while maintaining Layer 2 bridging. Which station mode should be used?",
+   opts:["Station","Station Bridge","Station Pseudobridge","Station WDS"],
+   correct:2, exp:"Station Pseudobridge is used when connecting to a non-MikroTik AP and Layer 2 bridging is required. Station Bridge only works between MikroTik devices."},
+
+  {mod:"M5 – Wireless", type:"multi",
+   q:"For two wireless devices to successfully establish a connection, which parameters must match? (Select all that apply)",
+   opts:["SSID","Frequency Band","Wireless Mode (AP/Station pairing)","Security Profile (encryption/auth)","Radio Name"],
+   correct:[0,1,2,3], exp:"SSID, frequency band, matching mode pair (AP+Station), and security profile must match. Radio Name is informational only and does not affect connectivity."},
+
+  {mod:"M5 – Wireless", type:"single",
+   q:"What is the purpose of 'Default Authenticate' on a MikroTik AP?",
+   opts:["Forces all clients to use WPA2","When unchecked, only MAC-listed clients in the Access List can connect","Enables automatic channel selection","Disables SSID broadcast"],
+   correct:1, exp:"When Default Authenticate is unchecked, the AP only allows stations whose MAC address is registered in the Access List. All others are rejected."},
+
+  {mod:"M5 – Wireless", type:"single",
+   q:"What does 'Default Forward' control on a MikroTik AP?",
+   opts:["Whether the AP forwards traffic to the internet","Whether wireless clients can communicate directly with each other through the AP","The default encryption method","SSID isolation per VLAN"],
+   correct:1, exp:"Default Forward, when disabled, prevents wireless clients connected to the same AP from communicating with each other (client isolation)."},
+
+  {mod:"M5 – Wireless", type:"single",
+   q:"An admin wants to restrict which APs a MikroTik station device will connect to. Which feature is used on the station side?",
+   opts:["Access List","Connect List","Registration Table","Security Profile"],
+   correct:1, exp:"Connect List (on the station) defines which APs (by MAC address or SSID) the station is allowed or denied to connect to."},
+
+  {mod:"M5 – Wireless", type:"multi",
+   q:"Which wireless security authentication types are available in MikroTik RouterOS Security Profiles? (Select all that apply)",
+   opts:["WPA-PSK","WPA2-PSK","WPA-EAP","WEP","Open (no auth)"],
+   correct:[0,1,2,3,4], exp:"RouterOS supports all common wireless security modes: WPA-PSK, WPA2-PSK, WPA-EAP (enterprise), WEP (legacy), and open (no authentication)."},
+
+  {mod:"M5 – Wireless", type:"single",
+   q:"What does CCQ (Client Connection Quality) measure in MikroTik wireless?",
+   opts:["The signal strength in dBm","The effectiveness/efficiency of available wireless bandwidth usage","The number of connected clients","The encryption overhead percentage"],
+   correct:1, exp:"CCQ measures how efficiently the available wireless bandwidth is being utilized. A higher CCQ means better quality and less retransmission overhead."},
+
+  /* ══════════════ MODULE 6: FIREWALL ══════════════ */
+  {mod:"M6 – Firewall", type:"single",
+   q:"A firewall rule needs to block traffic passing through the router from the LAN to the internet. Which chain should be used?",
+   opts:["Input","Output","Forward","Prerouting"],
+   correct:2, exp:"The Forward chain handles traffic that passes through the router from one interface to another (e.g., LAN → WAN). Input is for traffic destined TO the router itself."},
+
+  {mod:"M6 – Firewall", type:"single",
+   q:"An admin adds two firewall rules in the Input chain: Rule 1 accepts traffic from 192.168.1.100, Rule 2 drops all. A packet from 192.168.1.200 arrives. What happens?",
+   opts:["It is accepted by Rule 1","It is dropped by Rule 2","It passes through with no action","Both rules apply and it is accepted"],
+   correct:1, exp:"Firewall reads rules top-to-bottom. 192.168.1.200 does not match Rule 1 (which is for .100 only), so it falls to Rule 2 (drop all) and is dropped."},
+
+  {mod:"M6 – Firewall", type:"multi",
+   q:"Which firewall filter actions can be used in RouterOS Filter Rules? (Select all that apply)",
+   opts:["accept","drop","reject","jump","log","masquerade"],
+   correct:[0,1,2,3,4], exp:"Filter Rule actions: accept, drop, reject, jump (to custom chain), log, passthrough, return, tarpit, fasttrack. Masquerade is a NAT action, not a filter action."},
+
+  {mod:"M6 – Firewall", type:"single",
+   q:"What is the primary purpose of NAT (Network Address Translation) Masquerade in RouterOS?",
+   opts:["To block inbound connections from the internet","To allow multiple private IP devices to share a single public IP address for internet access","To create a VPN tunnel","To redirect DNS queries to a local server"],
+   correct:1, exp:"Masquerade is a type of source NAT (SRCNAT) that replaces the private IP of outgoing packets with the router's public IP, allowing many clients to share one public IP."},
+
+  {mod:"M6 – Firewall", type:"single",
+   q:"An admin wants to make a web server at 192.168.1.10:80 accessible from the internet via the router's public IP on port 8080. What type of NAT rule is needed?",
+   opts:["Masquerade (SRCNAT)","DSTNAT (port forwarding)","Redirect to localhost","Connection tracking"],
+   correct:1, exp:"DSTNAT (Destination NAT) is used to redirect inbound connections from a public IP:port to a private server's IP:port (port forwarding)."},
+
+  {mod:"M6 – Firewall", type:"multi",
+   q:"Which firewall features require Connection Tracking to be enabled? (Select all that apply)",
+   opts:["NAT","connection-state matching","connection-mark","Firewall Address List (static)","connection-bytes"],
+   correct:[0,1,2,4], exp:"NAT, connection-state, connection-mark, connection-bytes, and connection-limit all require connection tracking. Static Address Lists work independently."},
+
+  {mod:"M6 – Firewall", type:"single",
+   q:"What does the connection-state 'Established' mean in RouterOS Connection Tracking?",
+   opts:["A new connection is being opened","The connection belongs to an already known/tracked session","The packet does not belong to any known connection","The connection has been terminated"],
+   correct:1, exp:"Established means the packet belongs to a connection that has already been recognized and tracked (e.g., a response packet for an outgoing request)."},
+
+  {mod:"M6 – Firewall", type:"tf",
+   q:"True or False: In RouterOS, a Firewall Address List can be populated dynamically using the 'add-src-to-address-list' or 'add-dst-to-address-list' actions.",
+   opts:["True","False"],
+   correct:0, exp:"RouterOS can dynamically add source or destination IPs to an Address List using firewall actions, with optional timeout values."},
+
+  /* ══════════════ MODULE 7: QoS ══════════════ */
+  {mod:"M7 – QoS", type:"single",
+   q:"In RouterOS Simple Queue, what does 'limit-at' (CIR) represent?",
+   opts:["The maximum allowed bandwidth","The guaranteed minimum bandwidth a client will receive","The burst speed for the first few seconds","The total combined upload and download limit"],
+   correct:1, exp:"limit-at (CIR = Committed Information Rate) is the guaranteed minimum bandwidth. Even under heavy load, the client will receive at least this much bandwidth."},
+
+  {mod:"M7 – QoS", type:"single",
+   q:"What is the key difference between Simple Queue and Queue Tree in RouterOS?",
+   opts:["Simple Queue only limits download; Queue Tree only limits upload","Simple Queue is for basic per-client limits; Queue Tree allows hierarchical bandwidth management","Queue Tree is deprecated in RouterOS v7","Simple Queue cannot limit upload speed"],
+   correct:1, exp:"Simple Queue is straightforward for per-client or per-address bandwidth limiting. Queue Tree is more advanced, supporting parent-child queue hierarchies and interface-level control."},
+
+  {mod:"M7 – QoS", type:"single",
+   q:"An ISP wants to fairly distribute 10 Mbps among all connected users so each gets an equal share. Which RouterOS QoS feature is best suited?",
+   opts:["Simple Queue with fixed limits","Queue Tree with manual allocation","PCQ (Per Connection Queue)","Burst limit configuration"],
+   correct:2, exp:"PCQ (Per Connection Queue) dynamically divides total bandwidth equally among active users/connections, making it ideal for fair-share distribution without knowing how many users will be active."},
+
+  {mod:"M7 – QoS", type:"tf",
+   q:"True or False: In RouterOS Simple Queue, the 'max-limit' (MIR) defines the absolute maximum bandwidth a target can use.",
+   opts:["True","False"],
+   correct:0, exp:"max-limit (MIR = Maximum Information Rate) is the hard ceiling — the client can never exceed this speed regardless of available bandwidth."},
+
+  /* ══════════════ MODULE 8: TUNNEL ══════════════ */
+  {mod:"M8 – Tunnel", type:"single",
+   q:"What TCP port does PPTP use for its control connection?",
+   opts:["TCP 443","TCP 1194","TCP 1723","UDP 500"],
+   correct:2, exp:"PPTP uses TCP port 1723 for control. Data tunneling uses IP protocol 47 (GRE – Generic Routing Encapsulation)."},
+
+  {mod:"M8 – Tunnel", type:"single",
+   q:"An admin needs a VPN tunnel that can traverse firewalls with only port 443 open, without additional configuration. Which tunnel type should be used?",
+   opts:["PPTP","L2TP","SSTP","OpenVPN UDP"],
+   correct:2, exp:"SSTP (Secure Socket Tunneling Protocol) uses TCP 443 (same as HTTPS), allowing it to pass through most firewalls without special rules."},
+
+  {mod:"M8 – Tunnel", type:"single",
+   q:"What is the purpose of PPP Secret in RouterOS tunnel configuration?",
+   opts:["It defines the tunnel encryption algorithm","It stores username/password credentials for authenticating VPN clients","It specifies the tunnel interface IP address","It controls the maximum number of tunnels"],
+   correct:1, exp:"PPP Secret is the local user database containing username, password, local/remote IP address assignments used to authenticate tunnel clients (PPTP, L2TP, PPPoE, etc.)."},
+
+  {mod:"M8 – Tunnel", type:"single",
+   q:"During PPPoE connection establishment, which packet does the PPPoE client send first?",
+   opts:["PADO","PADR","PADI","PADS"],
+   correct:2, exp:"PPPoE connection sequence: PADI (client broadcast to find server) → PADO (server offers) → PADR (client requests session) → PADS (server confirms session)."},
+
+  {mod:"M8 – Tunnel", type:"multi",
+   q:"Which tunnel protocols does RouterOS PPP Secret support for client authentication? (Select all that apply)",
+   opts:["PPTP","L2TP","PPPoE","SSTP","IPSec (IKEv2)"],
+   correct:[0,1,2,3], exp:"PPP Secret supports authentication for PPTP, L2TP, PPPoE, SSTP, and async connections. IPSec IKEv2 uses its own certificate/PSK authentication, not PPP Secret."},
+
+  {mod:"M8 – Tunnel", type:"tf",
+   q:"True or False: PPPoE can operate across multiple broadcast domains without any additional configuration.",
+   opts:["True","False"],
+   correct:1, exp:"PPPoE only works within a single broadcast domain (one Ethernet segment). It cannot cross router boundaries without additional relay configurations."},
+
+  {mod:"M8 – Tunnel", type:"single",
+   q:"In RouterOS PPP Active Connections, what does the flag 'R' indicate?",
+   opts:["The connection uses a Remote IP","The client authenticated via a RADIUS server","The connection is using RIP routing","The tunnel is in a reconnecting state"],
+   correct:1, exp:"Flag L = Local (credentials from PPP Secret). Flag R = Radius (credentials validated by an external RADIUS server)."},
+
+  /* ══════════════ MODULE 9: MISC ══════════════ */
+  {mod:"M9 – MISC", type:"single",
+   q:"An admin wants to see which protocols and source/destination IPs are currently consuming bandwidth on an interface in real-time. Which RouterOS tool should be used?",
+   opts:["Graphs","SNMP","Torch","The Dude"],
+   correct:2, exp:"Torch is a real-time traffic monitoring tool that shows traffic classified by IP protocol, source/destination IP, and port on a specific interface."},
+
+  {mod:"M9 – MISC", type:"single",
+   q:"RouterOS Graphs can be accessed via WebFig using which URL path?",
+   opts:["http://router_ip/stats","http://router_ip/graphs","http://router_ip/monitor","http://router_ip/traffic"],
+   correct:1, exp:"RouterOS graphs can be viewed at http://router_ip/graphs via a web browser. Winbox access is via Tools > Graphing > Interface Graphs."},
+
+  {mod:"M9 – MISC", type:"multi",
+   q:"Which of the following can RouterOS Graphs monitor? (Select all that apply)",
+   opts:["Interface traffic","CPU usage","Memory usage","Disk usage","Active firewall connections"],
+   correct:[0,1,2,3], exp:"RouterOS Graphs can monitor interface traffic, CPU, memory, and disk usage. Active firewall connection counts are tracked in IP > Firewall > Connections, not via Graphs."},
+
+  {mod:"M9 – MISC", type:"single",
+   q:"Which SNMP versions does RouterOS support?",
+   opts:["v1 only","v1 and v2 only","v1, v2, and v3","v2c and v3 only"],
+   correct:2, exp:"RouterOS supports SNMP v1, v2 (v2c), and v3. SNMP is configured at IP > SNMP."},
+
+  {mod:"M9 – MISC", type:"single",
+   q:"What is The Dude application used for in a MikroTik environment?",
+   opts:["Configuring firewall rules remotely","Network topology discovery and real-time monitoring","Managing RouterOS licenses","Performing packet captures"],
+   correct:1, exp:"The Dude is MikroTik's free network monitoring application. It can auto-discover devices, monitor services via SNMP/ICMP/TCP/DNS, and send alerts."},
+
+  {mod:"M9 – MISC", type:"tf",
+   q:"True or False: The Dude application is available free of charge from MikroTik.",
+   opts:["True","False"],
+   correct:0, exp:"The Dude is free software provided by MikroTik. It requires a dedicated Dude Server (CCR, CHR, or x86) and client application."},
+
+  {mod:"M9 – MISC", type:"single",
+   q:"An admin wants to contact MikroTik support regarding a hardware failure. What file should be submitted and where is it found?",
+   opts:["debug.log from Tools > Log","autosupout.rif, viewable at mikrotik.com/account","backup.zip from System > Backup","sniffer.pcap from Tools > Packet Sniffer"],
+   correct:1, exp:"autosupout.rif is automatically created during hardware failures (managed by the watchdog process). Its contents can be viewed at mikrotik.com/account before sending to MikroTik support."},
+];
+
+// ── State ──
+const MODS = [...new Set(BANK.map(q => q.mod))];
+let selMods = new Set(MODS);
+let qCount = 10;
+let examMode = false;
+let questions = [];
+let idx = 0;
+let answers = []; // null | { chosen: [] | int, correct: bool, skipped: bool }
+let multiChosen = [];
+let timerInt = null;
+let timeLeft = 3600;
+
+// ── Build module cards ──
+const modGrid = document.getElementById('modGrid');
+MODS.forEach((m, i) => {
+  const n = BANK.filter(q => q.mod === m).length;
+  const d = document.createElement('div');
+  d.className = 'mod-card sel';
+  d.dataset.m = m;
+  const short = m.split('–')[1]?.trim() || m;
+  d.innerHTML = `<div class="mod-n">M${i+1}</div><div class="mod-t">${short}</div><div class="mod-c">${n} questions</div>`;
+  d.onclick = () => {
+    if (selMods.has(m)) { if (selMods.size === 1) return; selMods.delete(m); d.classList.remove('sel'); }
+    else { selMods.add(m); d.classList.add('sel'); }
+  };
+  modGrid.appendChild(d);
+});
+
+// ── N buttons ──
+document.querySelectorAll('#nRow .opt-btn').forEach(b => {
+  b.onclick = () => {
+    document.querySelectorAll('#nRow .opt-btn').forEach(x => x.classList.remove('active'));
+    b.classList.add('active');
+    const v = b.dataset.n;
+    qCount = v === 'all' ? 9999 : parseInt(v);
+    examMode = (v === '25');
+    document.getElementById('timerNote').textContent = examMode
+      ? '⏱ 60-minute timer will activate.'
+      : 'Timer activates in 25-question exam mode.';
+  };
+});
+
+function shuffle(a) {
+  const r = [...a];
+  for (let i = r.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i+1)); [r[i],r[j]] = [r[j],r[i]]; }
+  return r;
+}
+
+function startQuiz() {
+  const pool = BANK.filter(q => selMods.has(q.mod));
+  questions = shuffle(pool).slice(0, Math.min(qCount, pool.length));
+  answers = new Array(questions.length).fill(null);
+  idx = 0;
+  multiChosen = [];
+  showScreen('sQuiz');
+  renderQ();
+  if (examMode) {
+    timeLeft = 3600;
+    const td = document.getElementById('hTimer');
+    td.style.display = 'block';
+    td.classList.remove('warn');
+    timerInt = setInterval(() => {
+      timeLeft--;
+      const m = String(Math.floor(timeLeft/60)).padStart(2,'0');
+      const s = String(timeLeft%60).padStart(2,'0');
+      td.textContent = `${m}:${s}`;
+      if (timeLeft <= 300) td.classList.add('warn');
+      if (timeLeft <= 0) { clearInterval(timerInt); showResult(); }
+    }, 1000);
+  }
+}
+
+function renderQ() {
+  const q = questions[idx];
+  const total = questions.length;
+  multiChosen = [];
+
+  document.getElementById('progFill').style.width = `${(idx/total)*100}%`;
+  document.getElementById('qNum').textContent = `${idx+1} / ${total}`;
+
+  // Tags
+  const tagRow = document.getElementById('tagRow');
+  tagRow.innerHTML = `<span class="tag tag-mod">${q.mod}</span>`;
+  if (q.type === 'multi') tagRow.innerHTML += `<span class="tag tag-multi">Multiple Answer</span>`;
+  if (q.type === 'tf') tagRow.innerHTML += `<span class="tag tag-tf">True / False</span>`;
+
+  document.getElementById('qText').textContent = q.q;
+  document.getElementById('multiHint').style.display = q.type === 'multi' ? 'flex' : 'none';
+  document.getElementById('expBox').className = 'exp-box';
+  document.getElementById('expBox').innerHTML = '';
+  document.getElementById('btnNext').style.display = 'none';
+  document.getElementById('multiSubmit').className = 'multi-submit' + (q.type === 'multi' ? ' show' : '');
+
+  const labels = ['A','B','C','D','E','F'];
+  const optsEl = document.getElementById('opts');
+  optsEl.innerHTML = '';
+
+  q.opts.forEach((o, i) => {
+    const btn = document.createElement('button');
+    btn.className = 'opt';
+    if (q.type === 'multi') {
+      btn.innerHTML = `<span class="opt-cb"></span><span>${o}</span>`;
+      btn.onclick = () => toggleMulti(i, btn);
+    } else {
+      btn.innerHTML = `<span class="opt-lbl">${labels[i]}</span><span>${o}</span>`;
+      btn.onclick = () => selectSingle(i);
+    }
+    optsEl.appendChild(btn);
+  });
+}
+
+function toggleMulti(i, btn) {
+  if (btn.disabled) return;
+  if (multiChosen.includes(i)) {
+    multiChosen = multiChosen.filter(x => x !== i);
+    btn.classList.remove('checked');
+    btn.querySelector('.opt-cb').textContent = '';
+  } else {
+    multiChosen.push(i);
+    btn.classList.add('checked');
+    btn.querySelector('.opt-cb').textContent = '✓';
+  }
+}
+
+function submitMulti() {
+  const q = questions[idx];
+  const correct = q.correct; // array
+  const chosen = [...multiChosen].sort();
+  const exp = [...correct].sort();
+  const isCorrect = JSON.stringify(chosen) === JSON.stringify(exp);
+
+  answers[idx] = { chosen, correct: isCorrect, skipped: false, type: 'multi', correctIdxs: correct };
+
+  const btns = document.querySelectorAll('.opt');
+  btns.forEach(b => { b.disabled = true; });
+
+  btns.forEach((btn, i) => {
+    const inChosen = chosen.includes(i);
+    const inCorrect = correct.includes(i);
+    if (inCorrect) btn.classList.add('correct');
+    else if (inChosen && !inCorrect) btn.classList.add('wrong');
+  });
+
+  showExplanation(q.exp);
+  document.getElementById('multiSubmit').style.display = 'none';
+  showNextBtn();
+}
+
+function selectSingle(i) {
+  const q = questions[idx];
+  const isCorrect = i === q.correct;
+  answers[idx] = { chosen: i, correct: isCorrect, skipped: false, type: q.type };
+
+  const btns = document.querySelectorAll('.opt');
+  btns.forEach(b => { b.disabled = true; });
+  btns[q.correct].classList.add('correct');
+  if (!isCorrect) btns[i].classList.add('wrong');
+
+  showExplanation(q.exp);
+  showNextBtn();
+}
+
+function showExplanation(text) {
+  const box = document.getElementById('expBox');
+  box.innerHTML = `<strong>Explanation:</strong> ${text}`;
+  box.classList.add('show');
+}
+
+function showNextBtn() {
+  const btn = document.getElementById('btnNext');
+  btn.style.display = 'inline-block';
+  btn.textContent = idx === questions.length - 1 ? 'View Results →' : 'Next →';
+}
+
+function skipQ() {
+  answers[idx] = { chosen: null, correct: false, skipped: true };
+  nextQ();
+}
+
+function nextQ() {
+  if (idx >= questions.length - 1) showResult();
+  else { idx++; renderQ(); }
+}
+
+function showResult() {
+  clearInterval(timerInt);
+  document.getElementById('hTimer').style.display = 'none';
+
+  let ok = 0, no = 0, sk = 0;
+  answers.forEach(a => {
+    if (!a || a.skipped) sk++;
+    else if (a.correct) ok++;
+    else no++;
+  });
+
+  const total = questions.length;
+  const pct = Math.round((ok / total) * 100);
+
+  document.getElementById('resPct').textContent = pct + '%';
+  document.getElementById('stOk').textContent = ok;
+  document.getElementById('stNo').textContent = no;
+  document.getElementById('stSk').textContent = sk;
+
+  const v = document.getElementById('resVerdict');
+  const s = document.getElementById('resSub');
+  if (pct >= 60) {
+    v.textContent = '✅ PASSED'; v.className = 'res-verdict pass';
+    s.textContent = pct >= 75 ? 'Excellent! You meet the Trainer/Consultant requirement (≥75%).' : 'Congratulations! You passed the 60% passing grade.';
+  } else {
+    v.textContent = '❌ Not Passed Yet'; v.className = 'res-verdict fail';
+    s.textContent = 'MTCNA passing grade is 60%. Keep practicing!';
+  }
+
+  // Ring animation
+  const circ = 339.3;
+  const offset = circ - (pct / 100) * circ;
+  const arc = document.getElementById('ringArc');
+  arc.style.stroke = pct >= 60 ? '#238636' : '#da3633';
+  setTimeout(() => { arc.style.strokeDashoffset = offset; }, 100);
+
+  // Review
+  const box = document.getElementById('reviewBox');
+  box.innerHTML = '';
+  const labels = ['A','B','C','D','E','F'];
+  questions.forEach((q, i) => {
+    const a = answers[i];
+    const div = document.createElement('div');
+    let cls = 'ri ri-skip', ansHtml = '';
+
+    if (!a || a.skipped) {
+      cls = 'ri ri-skip';
+      if (q.type === 'multi') {
+        const cLabels = q.correct.map(x => labels[x] + '. ' + q.opts[x]).join(', ');
+        ansHtml = `<span class="no">Skipped</span> · <span class="ok">Correct: ${cLabels}</span>`;
+      } else {
+        ansHtml = `<span class="no">Skipped</span> · <span class="ok">Correct: ${labels[q.correct]}. ${q.opts[q.correct]}</span>`;
+      }
+    } else if (a.correct) {
+      cls = 'ri ri-ok';
+      if (q.type === 'multi') {
+        ansHtml = `<span class="ok">✓ ${a.chosen.map(x => labels[x]).join(', ')} — All correct</span>`;
+      } else {
+        ansHtml = `<span class="ok">✓ ${labels[a.chosen]}. ${q.opts[a.chosen]}</span>`;
+      }
+    } else {
+      cls = 'ri ri-no';
+      if (q.type === 'multi') {
+        const cLabels = q.correct.map(x => labels[x] + '. ' + q.opts[x]).join(', ');
+        const yLabels = a.chosen.length ? a.chosen.map(x => labels[x]).join(', ') : '(none)';
+        ansHtml = `<span class="no">✗ Your: ${yLabels}</span> · <span class="ok">Correct: ${cLabels}</span>`;
+      } else {
+        ansHtml = `<span class="no">✗ ${labels[a.chosen]}. ${q.opts[a.chosen]}</span> · <span class="ok">Correct: ${labels[q.correct]}. ${q.opts[q.correct]}</span>`;
+      }
+    }
+
+    div.className = cls;
+    div.innerHTML = `<div class="rq">${i+1}. ${q.q}</div><div class="ra">${ansHtml}</div>`;
+    box.appendChild(div);
+  });
+
+  showScreen('sResult');
+}
+
+function retryQuiz() { startQuiz(); }
+function goHome() {
+  clearInterval(timerInt);
+  document.getElementById('hTimer').style.display = 'none';
+  document.getElementById('hTimer').classList.remove('warn');
+  showScreen('sStart');
+}
+
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  window.scrollTo(0,0);
+}
+</script>
+</body>
+  </html>
